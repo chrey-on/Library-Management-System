@@ -8,16 +8,20 @@ def get_db():
     A single connection is reused for the entire lifecycle of an incoming request.
     """
     if 'db' not in g:
-        g.db = pymysql.connect(
-            host=current_app.config['DB_HOST'],
-            port=current_app.config['DB_PORT'],
-            user=current_app.config['DB_USER'],
-            password=current_app.config['DB_PASSWORD'],
-            database=current_app.config['DB_NAME'],
-            charset='utf8mb4',
-            cursorclass=DictCursor,
-            autocommit=False
-        )
+        connect_kwargs = {
+            'host': current_app.config['DB_HOST'],
+            'port': current_app.config['DB_PORT'],
+            'user': current_app.config['DB_USER'],
+            'password': current_app.config['DB_PASSWORD'],
+            'database': current_app.config['DB_NAME'],
+            'charset': 'utf8mb4',
+            'cursorclass': DictCursor,
+            'autocommit': False
+        }
+        if current_app.config.get('DB_SSL_REQUIRED'):
+            connect_kwargs['ssl'] = {'ssl_mode': 'REQUIRED'}
+
+        g.db = pymysql.connect(**connect_kwargs)
     return g.db
 
 def close_db(e=None):
