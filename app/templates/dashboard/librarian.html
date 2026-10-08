@@ -1,14 +1,247 @@
 {% extends 'base.html' %}
-{% block title %}Librarian Dashboard{% endblock %}
+{% block title %}Librarian Dashboard - Library Management System{% endblock %}
 {% block page_heading %}Librarian Dashboard{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info shadow-sm">
-            <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Welcome to Librarian Dashboard</h5>
-            <p class="mb-0">Authentication and session initialized successfully. Full dashboard stats and charts will be loaded in Phase 8.</p>
+<!-- Quick Action Buttons Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Library Overview & Operations</h4>
+        <p class="text-muted small mb-0">System status, circulation metrics, and operational quick links</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('loans.issue_loan') }}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-arrow-up-right-circle me-1"></i> Issue Loan
+        </a>
+        <a href="{{ url_for('loans.return_loan') }}" class="btn btn-success shadow-sm">
+            <i class="bi bi-arrow-down-left-circle me-1"></i> Return Book
+        </a>
+        <a href="{{ url_for('books.create_book') }}" class="btn btn-outline-primary">
+            <i class="bi bi-journal-plus me-1"></i> Add Book
+        </a>
+        <a href="{{ url_for('members.create_member') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-person-plus me-1"></i> Add Member
+        </a>
+    </div>
+</div>
+
+<!-- Stat Cards Grid -->
+<div class="row g-3 mb-4">
+    <!-- Total Titles -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 card-stat">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small d-block">Book Titles</span>
+                    <span class="h4 fw-bold text-dark mb-0">{{ stats.total_books }}</span>
+                    <small class="text-muted d-block mt-1">{{ stats.available_copies }} / {{ stats.total_copies }} copies on shelf</small>
+                </div>
+                <div class="p-3 bg-primary-subtle text-primary rounded-3">
+                    <i class="bi bi-journal-bookmark fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Loans -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 card-stat">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small d-block">Active Loans</span>
+                    <span class="h4 fw-bold text-info mb-0">{{ stats.active_loans }}</span>
+                    <small class="text-muted d-block mt-1">Currently checked out</small>
+                </div>
+                <div class="p-3 bg-info-subtle text-info rounded-3">
+                    <i class="bi bi-book fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Loans -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 card-stat">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small d-block">Overdue Books</span>
+                    <span class="h4 fw-bold text-danger mb-0">{{ stats.overdue_loans }}</span>
+                    <small class="text-danger d-block mt-1">Requires follow-up</small>
+                </div>
+                <div class="p-3 bg-danger-subtle text-danger rounded-3">
+                    <i class="bi bi-alarm fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unpaid Fines Balance -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 card-stat">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small d-block">Unpaid Fines</span>
+                    <span class="h4 fw-bold text-warning-emphasis mb-0">₱{{ "%.2f"|format(stats.unpaid_fines) }}</span>
+                    <small class="text-muted d-block mt-1">{{ stats.total_members }} active members</small>
+                </div>
+                <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-3">
+                    <i class="bi bi-cash-coin fs-3"></i>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Chart & Overdue Attention Row -->
+<div class="row g-4 mb-4">
+    <!-- Chart.js Borrowing Trends -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Monthly Circulation Activity ({{ current_year }})</h5>
+                <span class="badge bg-light text-muted border">sp_monthly_borrow_summary</span>
+            </div>
+            <div class="card-body p-3">
+                <div style="position: relative; height: 280px;">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Attention Panel -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Overdue Alert</h5>
+                <a href="{{ url_for('loans.list_loans', status='overdue') }}" class="small text-decoration-none">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for ov in overdue_loans %}
+                    <li class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-bold text-dark small">{{ ov.title }}</div>
+                                <div class="text-muted small">{{ ov.member_name }} ({{ ov.student_no }})</div>
+                            </div>
+                            <span class="badge bg-danger">{{ ov.current_days_overdue }}d late</span>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item p-4 text-center text-muted">
+                        <i class="bi bi-check-circle text-success fs-3 d-block mb-1"></i>
+                        No overdue books right now!
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Circulation Loans -->
+<div class="card shadow-sm border-0 table-card">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-clock-history me-2"></i>Recent Borrowing Transactions</h5>
+        <a href="{{ url_for('loans.list_loans') }}" class="btn btn-sm btn-outline-primary">View Full Circulation History</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Book & Copy</th>
+                        <th>Borrower</th>
+                        <th>Date Borrowed</th>
+                        <th>Due Date</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in recent_loans %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">{{ loan.title }}</div>
+                            <small class="text-muted"><code>{{ loan.accession_no }}</code></small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ loan.member_name }}</div>
+                            <small class="text-muted">{{ loan.student_no }}</small>
+                        </td>
+                        <td><small class="text-muted">{{ loan.borrowed_at.strftime('%b %d, %Y') if loan.borrowed_at else '—' }}</small></td>
+                        <td><small class="fw-semibold">{{ loan.due_date.strftime('%b %d, %Y') if loan.due_date else '—' }}</small></td>
+                        <td class="text-center">
+                            {% if loan.loan_status == 'returned' %}
+                                <span class="badge bg-success">Returned</span>
+                            {% elif loan.loan_status == 'overdue' %}
+                                <span class="badge bg-danger">Overdue</span>
+                            {% else %}
+                                <span class="badge bg-primary">Borrowed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No loans on record yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('monthlyChart');
+    if (ctx) {
+        const labels = {{ chart_months|tojson }};
+        const borrowedData = {{ chart_borrowed|tojson }};
+        const returnedData = {{ chart_returned|tojson }};
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.length ? labels : ['No Data'],
+                datasets: [
+                    {
+                        label: 'Books Borrowed',
+                        data: borrowedData.length ? borrowedData : [0],
+                        backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                        borderColor: 'rgb(37, 99, 235)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Books Returned',
+                        data: returnedData.length ? returnedData : [0],
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgb(16, 185, 129)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

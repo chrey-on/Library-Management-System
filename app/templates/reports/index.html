@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Analytics & Reports - Library Management System{% endblock %}
+{% block page_heading %}Reports & Analytics Hub{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Library Reports & Analytical Summaries</h4>
+    <p class="text-muted small mb-0">Generate printable circulation statistics, overdue audits, and inventory summaries</p>
+</div>
+
+<!-- Report Navigation Cards -->
+<div class="row g-4">
+    <!-- 1. Most Borrowed Books -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100 rounded-4 card-stat">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-primary-subtle text-primary rounded-3 d-inline-block mb-3">
+                        <i class="bi bi-trophy fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Most Borrowed Titles</h5>
+                    <p class="text-muted small mb-3">Ranked list of books by borrowing frequency and demand across all categories.</p>
+                </div>
+                <a href="{{ url_for('reports.most_borrowed') }}" class="btn btn-outline-primary w-100 fw-semibold">
+                    <i class="bi bi-file-earmark-text me-1"></i> View Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Overdue Books Audit -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100 rounded-4 card-stat">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-danger-subtle text-danger rounded-3 d-inline-block mb-3">
+                        <i class="bi bi-alarm fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Overdue Loans Audit</h5>
+                    <p class="text-muted small mb-3">List of books out past due date with borrower contact details and estimated penalties.</p>
+                </div>
+                <a href="{{ url_for('reports.overdue_report') }}" class="btn btn-outline-danger w-100 fw-semibold">
+                    <i class="bi bi-file-earmark-x me-1"></i> View Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Unpaid Fines Statements -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100 rounded-4 card-stat">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-3 d-inline-block mb-3">
+                        <i class="bi bi-cash-stack fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Unpaid Fines Ledger</h5>
+                    <p class="text-muted small mb-3">Students with outstanding penalty balances causing borrowing account suspension.</p>
+                </div>
+                <a href="{{ url_for('reports.unpaid_fines') }}" class="btn btn-outline-warning text-dark w-100 fw-semibold">
+                    <i class="bi bi-receipt me-1"></i> View Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Monthly Circulation Summary -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100 rounded-4 card-stat">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-success-subtle text-success rounded-3 d-inline-block mb-3">
+                        <i class="bi bi-calendar-check fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Monthly Circulation</h5>
+                    <p class="text-muted small mb-3">Monthly breakdown of borrowings, returns, unique readers, and fines collected.</p>
+                </div>
+                <a href="{{ url_for('reports.monthly_summary') }}" class="btn btn-outline-success w-100 fw-semibold">
+                    <i class="bi bi-bar-chart-line me-1"></i> View Report
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

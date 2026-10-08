@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Overdue Loans Audit - Library Report{% endblock %}
+{% block page_heading %}Overdue Book Loans Audit{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('reports.reports_home') }}" class="btn btn-sm btn-outline-secondary mb-2 no-print">
+            <i class="bi bi-arrow-left me-1"></i> Back to Reports
+        </a>
+        <h4 class="fw-bold mb-1">Overdue Loans & Delinquency Audit</h4>
+        <p class="text-muted small mb-0">Active book loans currently unreturned past their due date</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button onclick="window.print()" class="btn btn-outline-primary shadow-sm no-print">
+            <i class="bi bi-printer me-1"></i> Print Audit List
+        </button>
+    </div>
+</div>
+
+<!-- Summary Card -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 bg-danger-subtle text-danger p-3 rounded-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small d-block fw-semibold">Total Overdue Books</span>
+                    <span class="h3 fw-bold mb-0">{{ overdue_loans|length }}</span>
+                </div>
+                <i class="bi bi-alarm fs-2"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 bg-warning-subtle text-warning-emphasis p-3 rounded-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small d-block fw-semibold">Estimated Overdue Penalties</span>
+                    <span class="h3 fw-bold mb-0">₱{{ "%.2f"|format(total_est_fines) }}</span>
+                </div>
+                <i class="bi bi-calculator fs-2"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Book & Copy</th>
+                        <th>Borrower</th>
+                        <th>Course</th>
+                        <th>Contact No.</th>
+                        <th>Due Date</th>
+                        <th class="text-center">Days Late</th>
+                        <th class="text-end pe-3">Est. Fine</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in overdue_loans %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">{{ l.title }}</div>
+                            <small class="text-muted"><code>{{ l.accession_no }}</code></small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ l.member_name }}</div>
+                            <small class="text-muted">{{ l.student_no }}</small>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ l.course_code }}</span></td>
+                        <td><small>{{ l.contact_no or '—' }}</small></td>
+                        <td class="text-danger fw-semibold"><small>{{ l.due_date.strftime('%b %d, %Y') if l.due_date else '—' }}</small></td>
+                        <td class="text-center">
+                            <span class="badge bg-danger">{{ l.days_overdue }} days</span>
+                        </td>
+                        <td class="text-end pe-3 fw-bold text-danger">
+                            ₱{{ "%.2f"|format(l.estimated_fine) }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-check-circle display-6 text-success d-block mb-2"></i>
+                            Great news! There are currently no overdue books in the system.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

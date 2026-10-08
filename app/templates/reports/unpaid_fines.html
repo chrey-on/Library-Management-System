@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Unpaid Fines Ledger - Library Report{% endblock %}
+{% block page_heading %}Members with Unpaid Fines Report{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('reports.reports_home') }}" class="btn btn-sm btn-outline-secondary mb-2 no-print">
+            <i class="bi bi-arrow-left me-1"></i> Back to Reports
+        </a>
+        <h4 class="fw-bold mb-1">Unpaid Fines & Delinquent Members</h4>
+        <p class="text-muted small mb-0">Generated from database view <code>vw_member_unpaid_fines</code></p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button onclick="window.print()" class="btn btn-outline-primary shadow-sm no-print">
+            <i class="bi bi-printer me-1"></i> Print Statement
+        </button>
+    </div>
+</div>
+
+<!-- Summary Card -->
+<div class="card shadow-sm border-0 mb-4 bg-white p-3 rounded-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <span class="text-muted small d-block">Total Outstanding Unpaid Fines</span>
+            <span class="h3 fw-bold text-danger mb-0">₱{{ "%.2f"|format(total_unpaid_sum) }}</span>
+        </div>
+        <div>
+            <span class="badge bg-danger fs-6">{{ unpaid_members|length }} Member(s) with Balance</span>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Student Name</th>
+                        <th>Student Number</th>
+                        <th>Program</th>
+                        <th>Email & Contact</th>
+                        <th class="text-center">Unpaid Violations</th>
+                        <th class="text-end pe-3">Total Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in unpaid_members %}
+                    <tr>
+                        <td class="ps-3 fw-bold text-dark">
+                            <a href="{{ url_for('members.detail', member_id=m.member_id) }}" class="text-decoration-none text-dark">
+                                {{ m.member_name }}
+                            </a>
+                        </td>
+                        <td><code>{{ m.student_no }}</code></td>
+                        <td><span class="badge bg-light text-dark border">{{ m.course_code }}</span></td>
+                        <td>
+                            <small class="d-block">{{ m.email }}</small>
+                            <small class="text-muted">{{ m.contact_no or '—' }}</small>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-warning text-dark px-3">{{ m.unpaid_count }} fine(s)</span>
+                        </td>
+                        <td class="text-end pe-3 fw-bold text-danger fs-6">
+                            ₱{{ "%.2f"|format(m.total_unpaid) }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-shield-check display-6 text-success d-block mb-2"></i>
+                            All member accounts are in good standing with zero unpaid fines.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
