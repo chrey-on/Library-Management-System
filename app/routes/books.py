@@ -70,7 +70,13 @@ def create_book():
         publisher = request.form.get('publisher', '').strip()
         publication_year = request.form.get('publication_year', '').strip()
         description = request.form.get('description', '').strip()
+        cover_image_url = request.form.get('cover_image_url', '').strip()
         initial_copies = int(request.form.get('initial_copies', 1) or 1)
+
+        # If cover image is left empty, auto-generate Open Library cover URL from ISBN
+        if not cover_image_url and isbn:
+            clean_isbn = isbn.replace('-', '').replace(' ', '')
+            cover_image_url = f"https://covers.openlibrary.org/b/isbn/{clean_isbn}-L.jpg"
 
         # Basic validations
         if not isbn or not title or not category_id or not author_ids:
@@ -91,9 +97,9 @@ def create_book():
         try:
             # 1. Insert into books table
             res = execute_db(
-                "INSERT INTO books (isbn, title, category_id, publisher, publication_year, description) "
-                "VALUES (%s, %s, %s, %s, %s, %s)",
-                (isbn, title, category_id, publisher or None, int(publication_year) if publication_year else None, description or None),
+                "INSERT INTO books (isbn, title, category_id, publisher, publication_year, description, cover_image_url) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (isbn, title, category_id, publisher or None, int(publication_year) if publication_year else None, description or None, cover_image_url or None),
                 autocommit=False
             )
             new_book_id = res['last_id']
@@ -144,6 +150,11 @@ def edit_book(book_id):
         publisher = request.form.get('publisher', '').strip()
         publication_year = request.form.get('publication_year', '').strip()
         description = request.form.get('description', '').strip()
+        cover_image_url = request.form.get('cover_image_url', '').strip()
+
+        if not cover_image_url and isbn:
+            clean_isbn = isbn.replace('-', '').replace(' ', '')
+            cover_image_url = f"https://covers.openlibrary.org/b/isbn/{clean_isbn}-L.jpg"
 
         if not isbn or not title or not category_id or not author_ids:
             flash('ISBN, Title, Category, and at least one Author are required.', 'danger')
@@ -163,8 +174,8 @@ def edit_book(book_id):
             # Update book metadata
             execute_db(
                 "UPDATE books SET isbn = %s, title = %s, category_id = %s, publisher = %s, "
-                "publication_year = %s, description = %s WHERE book_id = %s",
-                (isbn, title, category_id, publisher or None, int(publication_year) if publication_year else None, description or None, book_id),
+                "publication_year = %s, description = %s, cover_image_url = %s WHERE book_id = %s",
+                (isbn, title, category_id, publisher or None, int(publication_year) if publication_year else None, description or None, cover_image_url or None, book_id),
                 autocommit=False
             )
 

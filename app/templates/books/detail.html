@@ -26,29 +26,53 @@
     <div class="col-lg-8">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white border-bottom py-3">
-                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-info-circle me-2"></i>Book Information</h5>
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-info-circle me-2 text-indigo"></i>Book Information</h5>
             </div>
             <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-sm-6">
-                        <span class="text-muted small d-block">Author(s)</span>
-                        <span class="fw-semibold">{{ book.authors or 'None listed' }}</span>
+                <div class="row g-4">
+                    <div class="col-md-4 text-center">
+                        <div class="rounded-4 border shadow-sm overflow-hidden bg-light mx-auto position-relative" style="max-width: 180px; aspect-ratio: 3/4;">
+                            {% if book.cover_image_url %}
+                            <img src="{{ book.cover_image_url }}" alt="{{ book.title }}" class="w-100 h-100 object-fit-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="w-100 h-100 d-none align-items-center justify-content-center text-muted bg-slate-100 p-3 flex-column">
+                                <i class="bi bi-book display-4 text-indigo mb-2"></i>
+                                <span class="small fw-semibold text-center">{{ book.title }}</span>
+                            </div>
+                            {% else %}
+                            <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted bg-slate-100 p-3 flex-column">
+                                <i class="bi bi-book display-4 text-indigo mb-2"></i>
+                                <span class="small fw-semibold text-center">{{ book.title }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="col-sm-6">
-                        <span class="text-muted small d-block">Category</span>
-                        <span class="badge bg-light text-dark border">{{ book.category_name }}</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <span class="text-muted small d-block">Publisher</span>
-                        <span>{{ book.publisher or '—' }}</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <span class="text-muted small d-block">Publication Year</span>
-                        <span>{{ book.publication_year or '—' }}</span>
-                    </div>
-                    <div class="col-12">
-                        <span class="text-muted small d-block">Description</span>
-                        <p class="mb-0 text-secondary">{{ book.description or 'No synopsis provided.' }}</p>
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <span class="text-muted small d-block">Author(s)</span>
+                                <span class="fw-semibold fs-6 text-dark">{{ book.authors or 'None listed' }}</span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Category</span>
+                                <span class="badge bg-light text-dark border">{{ book.category_name }}</span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">ISBN</span>
+                                <code>{{ book.isbn }}</code>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Publisher</span>
+                                <span>{{ book.publisher or '—' }}</span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Publication Year</span>
+                                <span>{{ book.publication_year or '—' }}</span>
+                            </div>
+                            <div class="col-12">
+                                <span class="text-muted small d-block">Description</span>
+                                <p class="mb-0 text-secondary small line-clamp-4">{{ book.description or 'No synopsis provided.' }}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -59,7 +83,7 @@
     <div class="col-lg-4">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white border-bottom py-3">
-                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-pie-chart me-2"></i>Copy Summary</h5>
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-pie-chart me-2 text-indigo"></i>Copy Summary</h5>
             </div>
             <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
                 <div class="display-5 fw-bold text-primary mb-1">{{ book.total_copies }}</div>
@@ -67,7 +91,7 @@
                 <div class="d-flex justify-content-around border-top pt-3">
                     <div>
                         <div class="h5 fw-bold text-success mb-0">{{ book.available_copies }}</div>
-                        <small class="text-muted">Available</small>
+                        <small class="text-muted">Available on Shelf</small>
                     </div>
                     <div>
                         <div class="h5 fw-bold text-info mb-0">{{ book.total_copies - book.available_copies }}</div>

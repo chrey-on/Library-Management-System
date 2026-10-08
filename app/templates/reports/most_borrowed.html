@@ -44,7 +44,23 @@
                                 <span class="text-muted">#{{ loop.index }}</span>
                             {% endif %}
                         </td>
-                        <td class="fw-bold text-dark">{{ b.title }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded border shadow-2xs overflow-hidden bg-light flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 44px;">
+                                    {% if b.cover_image_url %}
+                                    <img src="{{ b.cover_image_url }}" alt="{{ b.title }}" class="w-100 h-100 object-fit-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="w-100 h-100 d-none align-items-center justify-content-center text-muted bg-slate-100">
+                                        <i class="bi bi-book text-indigo" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted bg-slate-100">
+                                        <i class="bi bi-book text-indigo" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="fw-bold text-dark">{{ b.title }}</div>
+                            </div>
+                        </td>
                         <td><small class="text-muted"><code>{{ b.isbn }}</code></small></td>
                         <td><span class="badge bg-light text-dark border">{{ b.category_name }}</span></td>
                         <td><small class="text-muted">{{ b.authors or 'None' }}</small></td>

@@ -1,19 +1,7 @@
 -- =====================================================================
---  LIBRARY MANAGEMENT SYSTEM - DATABASE SCRIPT
+--  LIBRARY MANAGEMENT SYSTEM - DATABASE SCRIPT (ENHANCED WITH COVERS)
 --  Database 2 Case Study (IT31A)
 --  Target: MariaDB 10.4 (XAMPP) / MySQL 8 compatible
---
---  HOW TO RUN:
---    Option A (phpMyAdmin): Import tab -> choose this file -> Go
---    Option B (terminal):   D:\xampp\mysql\bin\mysql.exe -u root < sql\library_db.sql
---
---  WARNING: This script DROPS and recreates the `library_db` database.
---           Re-running it resets ALL data back to the sample data.
---
---  SAMPLE LOGINS:
---    Librarian -> username: admin       password: admin123
---    Member    -> username: ana.reyes   password: member123
---    (all sample members use the password: member123)
 -- =====================================================================
 
 DROP DATABASE IF EXISTS library_db;
@@ -27,9 +15,6 @@ USE library_db;
 --  SECTION 1: TABLES
 -- =====================================================================
 
--- ---------------------------------------------------------------------
--- library_settings: configurable business rules (no hard-coded values)
--- ---------------------------------------------------------------------
 CREATE TABLE library_settings (
     setting_key    VARCHAR(50)  NOT NULL,
     setting_value  VARCHAR(100) NOT NULL,
@@ -37,18 +22,15 @@ CREATE TABLE library_settings (
     CONSTRAINT pk_library_settings PRIMARY KEY (setting_key)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- users: login accounts for BOTH librarians and members
--- ---------------------------------------------------------------------
 CREATE TABLE users (
     user_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
     username       VARCHAR(50)  NOT NULL,
-    password_hash  VARCHAR(255) NOT NULL,            -- werkzeug pbkdf2 hash
+    password_hash  VARCHAR(255) NOT NULL,
     role           ENUM('librarian', 'member') NOT NULL,
     first_name     VARCHAR(50)  NOT NULL,
     last_name      VARCHAR(50)  NOT NULL,
     email          VARCHAR(100) NOT NULL,
-    is_active      TINYINT(1)   NOT NULL DEFAULT 1,  -- 0 = deactivated
+    is_active      TINYINT(1)   NOT NULL DEFAULT 1,
     created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                 ON UPDATE CURRENT_TIMESTAMP,
@@ -60,9 +42,6 @@ CREATE TABLE users (
     INDEX idx_users_name (last_name, first_name)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- courses: lookup table (keeps course names out of members -> 3NF)
--- ---------------------------------------------------------------------
 CREATE TABLE courses (
     course_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     course_code  VARCHAR(20)  NOT NULL,
@@ -71,9 +50,6 @@ CREATE TABLE courses (
     CONSTRAINT uq_courses_code UNIQUE (course_code)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- members: student-specific details (1-to-1 with users)
--- ---------------------------------------------------------------------
 CREATE TABLE members (
     member_id    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     user_id      INT UNSIGNED     NOT NULL,
@@ -91,9 +67,6 @@ CREATE TABLE members (
         REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- categories
--- ---------------------------------------------------------------------
 CREATE TABLE categories (
     category_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name         VARCHAR(50)  NOT NULL,
@@ -102,9 +75,6 @@ CREATE TABLE categories (
     CONSTRAINT uq_categories_name UNIQUE (name)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- authors
--- ---------------------------------------------------------------------
 CREATE TABLE authors (
     author_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
     first_name  VARCHAR(50)  NOT NULL,
@@ -113,9 +83,6 @@ CREATE TABLE authors (
     INDEX idx_authors_name (last_name, first_name)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- books: the title/edition (NOT the physical copy)
--- ---------------------------------------------------------------------
 CREATE TABLE books (
     book_id           INT UNSIGNED      NOT NULL AUTO_INCREMENT,
     isbn              VARCHAR(17)       NOT NULL,
@@ -124,7 +91,8 @@ CREATE TABLE books (
     publisher         VARCHAR(100)      NULL,
     publication_year  SMALLINT UNSIGNED NULL,
     description       TEXT              NULL,
-    is_archived       TINYINT(1)        NOT NULL DEFAULT 0,  -- soft delete
+    cover_image_url   VARCHAR(500)      NULL,
+    is_archived       TINYINT(1)        NOT NULL DEFAULT 0,
     created_at        DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP
                                         ON UPDATE CURRENT_TIMESTAMP,
@@ -139,9 +107,6 @@ CREATE TABLE books (
     INDEX idx_books_archived (is_archived)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- book_authors: junction table (many-to-many books <-> authors)
--- ---------------------------------------------------------------------
 CREATE TABLE book_authors (
     book_id    INT UNSIGNED NOT NULL,
     author_id  INT UNSIGNED NOT NULL,
@@ -153,9 +118,6 @@ CREATE TABLE book_authors (
     INDEX idx_book_authors_author (author_id)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- book_copies: each physical copy on the shelf
--- ---------------------------------------------------------------------
 CREATE TABLE book_copies (
     copy_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
     book_id        INT UNSIGNED NOT NULL,
@@ -171,21 +133,15 @@ CREATE TABLE book_copies (
     INDEX idx_book_copies_book_status (book_id, status)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- loans: one row per borrow transaction
--- ---------------------------------------------------------------------
 CREATE TABLE loans (
     loan_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
     copy_id      INT UNSIGNED NOT NULL,
     member_id    INT UNSIGNED NOT NULL,
-    issued_by    INT UNSIGNED NOT NULL,          -- librarian who lent it
+    issued_by    INT UNSIGNED NOT NULL,
     borrowed_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     due_date     DATE         NOT NULL,
-    returned_at  DATETIME     NULL,              -- NULL = still borrowed
-    received_by  INT UNSIGNED NULL,              -- librarian who received it
-    -- Helper column: holds copy_id ONLY while the loan is active.
-    -- The UNIQUE key below makes it IMPOSSIBLE (at the database level)
-    -- for the same copy to have two active loans at the same time.
+    returned_at  DATETIME     NULL,
+    received_by  INT UNSIGNED NULL,
     active_copy_id INT UNSIGNED AS (IF(returned_at IS NULL, copy_id, NULL)) PERSISTENT,
     CONSTRAINT pk_loans             PRIMARY KEY (loan_id),
     CONSTRAINT uq_loans_active_copy UNIQUE (active_copy_id),
@@ -204,19 +160,15 @@ CREATE TABLE loans (
     INDEX idx_loans_borrowed_at (borrowed_at)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- fines: at most one fine per loan (created when returned late)
--- ---------------------------------------------------------------------
 CREATE TABLE fines (
     fine_id       INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     loan_id       INT UNSIGNED  NOT NULL,
     days_overdue  INT UNSIGNED  NOT NULL,
-    rate_per_day  DECIMAL(8,2)  NOT NULL,        -- rate at the time of the fine
-    -- amount is computed automatically, never typed in manually
+    rate_per_day  DECIMAL(8,2)  NOT NULL,
     amount        DECIMAL(10,2) AS (days_overdue * rate_per_day) PERSISTENT,
     is_paid       TINYINT(1)    NOT NULL DEFAULT 0,
     paid_at       DATETIME      NULL,
-    received_by   INT UNSIGNED  NULL,            -- librarian who received payment
+    received_by   INT UNSIGNED  NULL,
     created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_fines          PRIMARY KEY (fine_id),
     CONSTRAINT uq_fines_loan     UNIQUE (loan_id),
@@ -237,12 +189,6 @@ CREATE TABLE fines (
 -- =====================================================================
 DELIMITER $$
 
--- ---------------------------------------------------------------------
--- trg_loans_before_insert
--- Enforces ALL borrowing rules inside the database, so they cannot be
--- bypassed even if someone inserts directly into the loans table.
--- Only checks NEW loans (returned_at IS NULL), not historical records.
--- ---------------------------------------------------------------------
 CREATE TRIGGER trg_loans_before_insert
 BEFORE INSERT ON loans
 FOR EACH ROW
@@ -257,8 +203,7 @@ BEGIN
     IF NEW.returned_at IS NULL THEN
 
         -- Rule 1: the copy must exist and be available
-        SET v_copy_status = (SELECT status FROM book_copies
-                             WHERE copy_id = NEW.copy_id);
+        SET v_copy_status = (SELECT status FROM book_copies WHERE copy_id = NEW.copy_id);
         IF v_copy_status IS NULL THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Book copy not found.';
         ELSEIF v_copy_status <> 'available' THEN
@@ -302,7 +247,7 @@ BEGIN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Member has unpaid fines. Please settle them first.';
         END IF;
 
-        -- Rule 6: maximum active loans (from library_settings)
+        -- Rule 6: maximum active loans
         SET v_max_loans = (SELECT CAST(setting_value AS UNSIGNED)
                            FROM library_settings
                            WHERE setting_key = 'max_active_loans');
@@ -317,9 +262,6 @@ BEGIN
     END IF;
 END$$
 
--- ---------------------------------------------------------------------
--- trg_loans_after_insert: mark the copy as borrowed
--- ---------------------------------------------------------------------
 CREATE TRIGGER trg_loans_after_insert
 AFTER INSERT ON loans
 FOR EACH ROW
@@ -329,9 +271,6 @@ BEGIN
     END IF;
 END$$
 
--- ---------------------------------------------------------------------
--- trg_loans_after_update: mark the copy as available when returned
--- ---------------------------------------------------------------------
 CREATE TRIGGER trg_loans_after_update
 AFTER UPDATE ON loans
 FOR EACH ROW
@@ -350,9 +289,6 @@ DELIMITER ;
 --  SECTION 3: VIEWS
 -- =====================================================================
 
--- ---------------------------------------------------------------------
--- vw_book_catalog: books with category, author list, and copy counts
--- ---------------------------------------------------------------------
 CREATE VIEW vw_book_catalog AS
 SELECT
     b.book_id,
@@ -362,6 +298,8 @@ SELECT
     c.name AS category_name,
     b.publisher,
     b.publication_year,
+    b.description,
+    b.cover_image_url,
     b.is_archived,
     (SELECT GROUP_CONCAT(CONCAT(a.first_name, ' ', a.last_name)
                          ORDER BY a.last_name SEPARATOR ', ')
@@ -375,9 +313,6 @@ SELECT
 FROM books b
 JOIN categories c ON c.category_id = b.category_id;
 
--- ---------------------------------------------------------------------
--- vw_loan_details: every loan with book, member, status, and fine info
--- ---------------------------------------------------------------------
 CREATE VIEW vw_loan_details AS
 SELECT
     l.loan_id,
@@ -386,6 +321,7 @@ SELECT
     b.book_id,
     b.isbn,
     b.title,
+    b.cover_image_url,
     l.member_id,
     m.student_no,
     CONCAT(u.first_name, ' ', u.last_name)                AS member_name,
@@ -402,7 +338,6 @@ SELECT
             THEN DATEDIFF(CURDATE(), l.due_date)
         ELSE 0
     END                                                   AS current_days_overdue,
-    -- live estimate for books that are overdue and still out
     CASE
         WHEN l.returned_at IS NULL AND l.due_date < CURDATE()
             THEN DATEDIFF(CURDATE(), l.due_date)
@@ -422,9 +357,6 @@ JOIN members m      ON m.member_id = l.member_id
 JOIN users u        ON u.user_id   = m.user_id
 LEFT JOIN fines f   ON f.loan_id   = l.loan_id;
 
--- ---------------------------------------------------------------------
--- vw_member_unpaid_fines: total unpaid fines per member
--- ---------------------------------------------------------------------
 CREATE VIEW vw_member_unpaid_fines AS
 SELECT
     m.member_id,
@@ -440,21 +372,19 @@ JOIN users u   ON u.user_id   = m.user_id
 WHERE f.is_paid = 0
 GROUP BY m.member_id, m.student_no, u.first_name, u.last_name, u.email;
 
--- ---------------------------------------------------------------------
--- vw_most_borrowed_books: borrow count per book (for reports)
--- ---------------------------------------------------------------------
 CREATE VIEW vw_most_borrowed_books AS
 SELECT
     b.book_id,
     b.isbn,
     b.title,
+    b.cover_image_url,
     c.name           AS category_name,
     COUNT(l.loan_id) AS times_borrowed
 FROM books b
 JOIN categories c        ON c.category_id = b.category_id
 LEFT JOIN book_copies bc ON bc.book_id    = b.book_id
 LEFT JOIN loans l        ON l.copy_id     = bc.copy_id
-GROUP BY b.book_id, b.isbn, b.title, c.name;
+GROUP BY b.book_id, b.isbn, b.title, b.cover_image_url, c.name;
 
 
 -- =====================================================================
@@ -462,11 +392,6 @@ GROUP BY b.book_id, b.isbn, b.title, c.name;
 -- =====================================================================
 DELIMITER $$
 
--- ---------------------------------------------------------------------
--- sp_borrow_book: creates a loan with the due date from settings.
--- All validation happens in trg_loans_before_insert.
--- Returns: one row with the new loan_id and due_date.
--- ---------------------------------------------------------------------
 CREATE PROCEDURE sp_borrow_book(
     IN p_member_id    INT UNSIGNED,
     IN p_copy_id      INT UNSIGNED,
@@ -486,11 +411,6 @@ BEGIN
     SELECT LAST_INSERT_ID() AS loan_id, v_due_date AS due_date;
 END$$
 
--- ---------------------------------------------------------------------
--- sp_return_book: marks a loan returned and creates a fine if late.
--- Runs in a transaction: either everything succeeds or nothing changes.
--- Returns: one row with days_overdue and fine_amount.
--- ---------------------------------------------------------------------
 CREATE PROCEDURE sp_return_book(
     IN p_loan_id      INT UNSIGNED,
     IN p_librarian_id INT UNSIGNED
@@ -517,7 +437,7 @@ BEGIN
       INTO v_due_date, v_returned_at
       FROM loans
      WHERE loan_id = p_loan_id
-       FOR UPDATE;                       -- lock the row while we work
+       FOR UPDATE;
 
     IF v_returned_at IS NOT NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'This book has already been returned.';
@@ -526,7 +446,7 @@ BEGIN
     UPDATE loans
        SET returned_at = NOW(),
            received_by = p_librarian_id
-     WHERE loan_id = p_loan_id;          -- trigger sets copy to 'available'
+     WHERE loan_id = p_loan_id;
 
     SET v_days_late = DATEDIFF(CURDATE(), v_due_date);
 
@@ -543,9 +463,6 @@ BEGIN
            IF(v_days_late > 0, v_days_late * v_rate, 0.00) AS fine_amount;
 END$$
 
--- ---------------------------------------------------------------------
--- sp_pay_fine: marks a fine as fully paid
--- ---------------------------------------------------------------------
 CREATE PROCEDURE sp_pay_fine(
     IN p_fine_id      INT UNSIGNED,
     IN p_librarian_id INT UNSIGNED
@@ -568,9 +485,6 @@ BEGIN
      WHERE fine_id = p_fine_id;
 END$$
 
--- ---------------------------------------------------------------------
--- sp_monthly_borrow_summary: borrowing statistics per month of a year
--- ---------------------------------------------------------------------
 CREATE PROCEDURE sp_monthly_borrow_summary(
     IN p_year SMALLINT UNSIGNED
 )
@@ -593,7 +507,7 @@ DELIMITER ;
 
 
 -- =====================================================================
---  SECTION 5: SAMPLE DATA
+--  SECTION 5: SAMPLE DATA WITH CURATED COVER IMAGES
 -- =====================================================================
 
 INSERT INTO library_settings (setting_key, setting_value, description) VALUES
@@ -601,7 +515,6 @@ INSERT INTO library_settings (setting_key, setting_value, description) VALUES
 ('max_active_loans', '3',    'Maximum books a member can borrow at once'),
 ('fine_per_day',     '5.00', 'Overdue fine per day in PHP');
 
--- Passwords: admin123 (librarians), member123 (members)
 INSERT INTO users (user_id, username, password_hash, role, first_name, last_name, email, is_active) VALUES
 (1, 'admin',          'pbkdf2:sha256:600000$fb3daa85abfb14b6$6a0bd6516054e9bb0f84b568242b84fd76b91a27ef03e585f1418ec390fa9faa', 'librarian', 'Library',  'Admin',     'admin@library.local',          1),
 (2, 'jdelacruz',      'pbkdf2:sha256:600000$fb3daa85abfb14b6$6a0bd6516054e9bb0f84b568242b84fd76b91a27ef03e585f1418ec390fa9faa', 'librarian', 'Juan',     'Dela Cruz', 'juan.delacruz@library.local',  1),
@@ -627,12 +540,12 @@ INSERT INTO members (member_id, user_id, student_no, course_id, year_level, cont
 (6, 8, '2022-00106', 2, 4, '09171234506');
 
 INSERT INTO categories (category_id, name, description) VALUES
-(1, 'Programming',      'Software development and programming languages'),
-(2, 'Database Systems', 'Database design, SQL, and data management'),
-(3, 'Networking',       'Computer networks and communications'),
-(4, 'Web Development',  'HTML, CSS, JavaScript, and web technologies'),
-(5, 'Mathematics',      'Discrete math, statistics, and related topics'),
-(6, 'Fiction',          'Novels and literary works');
+(1, 'Programming',      'Software development, software craft and programming languages'),
+(2, 'Database Systems', 'Database design, SQL, normalization, and data architecture'),
+(3, 'Networking',       'Computer networks, protocols, and telecommunications'),
+(4, 'Web Development',  'HTML, CSS, modern JavaScript, and web architecture'),
+(5, 'Mathematics',      'Discrete math, statistics, and computational theory'),
+(6, 'Literature',       'Classic novels and literary masterpieces');
 
 INSERT INTO authors (author_id, first_name, last_name) VALUES
 (1,  'Robert C.',   'Martin'),
@@ -652,19 +565,19 @@ INSERT INTO authors (author_id, first_name, last_name) VALUES
 (15, 'Harper',      'Lee'),
 (16, 'Thomas H.',   'Cormen');
 
-INSERT INTO books (book_id, isbn, title, category_id, publisher, publication_year, description) VALUES
-(1,  '9780132350884', 'Clean Code',                               1, 'Prentice Hall',   2008, 'A handbook of agile software craftsmanship.'),
-(2,  '9780135957059', 'The Pragmatic Programmer',                 1, 'Addison-Wesley',  2019, 'Your journey to mastery, 20th anniversary edition.'),
-(3,  '9780133970777', 'Fundamentals of Database Systems',         2, 'Pearson',         2015, 'Comprehensive introduction to database concepts.'),
-(4,  '9780078022159', 'Database System Concepts',                 2, 'McGraw-Hill',     2019, 'Classic textbook on database systems.'),
-(5,  '9780132126953', 'Computer Networks',                        3, 'Pearson',         2010, 'Top-down look at how networks work.'),
-(6,  '9781118008188', 'HTML and CSS: Design and Build Websites',  4, 'Wiley',           2011, 'A visual guide to HTML and CSS.'),
-(7,  '9781593279509', 'Eloquent JavaScript',                      4, 'No Starch Press', 2018, 'A modern introduction to programming with JavaScript.'),
-(8,  '9781718502703', 'Python Crash Course',                      1, 'No Starch Press', 2023, 'A hands-on, project-based introduction to Python.'),
-(9,  '9781259676512', 'Discrete Mathematics and Its Applications',5, 'McGraw-Hill',     2018, 'Standard text for discrete mathematics.'),
-(10, '9780451524935', '1984',                                     6, 'Signet Classics', 1961, 'A dystopian novel about surveillance and control.'),
-(11, '9780061120084', 'To Kill a Mockingbird',                    6, 'Harper Perennial',2006, 'A novel about justice and growing up.'),
-(12, '9780262046305', 'Introduction to Algorithms',               1, 'MIT Press',       2022, 'Comprehensive guide to algorithms.');
+INSERT INTO books (book_id, isbn, title, category_id, publisher, publication_year, description, cover_image_url) VALUES
+(1,  '9780132350884', 'Clean Code',                               1, 'Prentice Hall',   2008, 'A handbook of agile software craftsmanship with best practices for writing readable, maintainable code.', 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg'),
+(2,  '9780135957059', 'The Pragmatic Programmer',                 1, 'Addison-Wesley',  2019, 'Your journey to mastery: from coding fundamentals to architectural mastery, 20th anniversary edition.', 'https://covers.openlibrary.org/b/isbn/9780135957059-L.jpg'),
+(3,  '9780133970777', 'Fundamentals of Database Systems',         2, 'Pearson',         2015, 'Comprehensive introduction to database concepts, relational algebra, SQL, and normalization.', 'https://covers.openlibrary.org/b/isbn/9780133970777-L.jpg'),
+(4,  '9780078022159', 'Database System Concepts',                 2, 'McGraw-Hill',     2019, 'Classic and authoritative textbook covering modern storage, transactions, and relational engines.', 'https://covers.openlibrary.org/b/isbn/9780078022159-L.jpg'),
+(5,  '9780132126953', 'Computer Networks',                        3, 'Pearson',         2010, 'A top-down structured exploration of computer networks, TCP/IP protocol stack, and routing.', 'https://covers.openlibrary.org/b/isbn/9780132126953-L.jpg'),
+(6,  '9781118008188', 'HTML and CSS: Design and Build Websites',  4, 'Wiley',           2011, 'A visual and full-color introduction to front-end web design and semantic markup.', 'https://covers.openlibrary.org/b/isbn/9781118008188-L.jpg'),
+(7,  '9781593279509', 'Eloquent JavaScript',                      4, 'No Starch Press', 2018, 'A modern introduction to programming, DOM manipulation, and asynchronous JavaScript.', 'https://covers.openlibrary.org/b/isbn/9781593279509-L.jpg'),
+(8,  '9781718502703', 'Python Crash Course',                      1, 'No Starch Press', 2023, 'A fast-paced, hands-on, project-based introduction to programming with Python 3.', 'https://covers.openlibrary.org/b/isbn/9781718502703-L.jpg'),
+(9,  '9781259676512', 'Discrete Mathematics and Its Applications',5, 'McGraw-Hill',     2018, 'The standard text for discrete mathematics, graph theory, combinatorics, and proof methods.', 'https://covers.openlibrary.org/b/isbn/9781259676512-L.jpg'),
+(10, '9780451524935', '1984',                                     6, 'Signet Classics', 1961, 'A haunting dystopian masterpiece on surveillance, truth manipulation, and authoritarian control.', 'https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg'),
+(11, '9780061120084', 'To Kill a Mockingbird',                    6, 'Harper Perennial',2006, 'Pulitzer Prize-winning masterpiece exploring justice, innocence, and morality in the American South.', 'https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg'),
+(12, '9780262046305', 'Introduction to Algorithms',               1, 'MIT Press',       2022, 'The renowned CLRS algorithms textbook covering sorting, graph algorithms, and dynamic programming.', 'https://covers.openlibrary.org/b/isbn/9780262046305-L.jpg');
 
 INSERT INTO book_authors (book_id, author_id) VALUES
 (1, 1), (2, 2), (2, 3), (3, 4), (3, 5), (4, 6), (4, 7), (4, 8),
@@ -699,35 +612,28 @@ INSERT INTO book_copies (copy_id, book_id, accession_no, status, acquired_date) 
 (26, 12, 'ACC-0026', 'damaged',   '2025-01-15'),
 (27, 12, 'ACC-0027', 'available', '2025-01-15');
 
--- Loans use dates RELATIVE to today, so the sample data always shows
--- a realistic mix of returned, active, and overdue loans whenever imported.
-
--- Historical (already returned) loans
+-- Historical returned loans
 INSERT INTO loans (loan_id, copy_id, member_id, issued_by, borrowed_at, due_date, returned_at, received_by) VALUES
-(1, 1,  1, 1, NOW() - INTERVAL 40 DAY, CURDATE() - INTERVAL 33 DAY, NOW() - INTERVAL 34 DAY, 1),  -- on time
-(2, 6,  2, 1, NOW() - INTERVAL 35 DAY, CURDATE() - INTERVAL 28 DAY, NOW() - INTERVAL 25 DAY, 2),  -- 3 days late
-(3, 15, 3, 2, NOW() - INTERVAL 30 DAY, CURDATE() - INTERVAL 23 DAY, NOW() - INTERVAL 20 DAY, 1),  -- 3 days late
-(4, 9,  4, 1, NOW() - INTERVAL 25 DAY, CURDATE() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY, 1),  -- on time
-(5, 1,  2, 2, NOW() - INTERVAL 20 DAY, CURDATE() - INTERVAL 13 DAY, NOW() - INTERVAL 14 DAY, 2),  -- on time
-(6, 22, 1, 1, NOW() - INTERVAL 18 DAY, CURDATE() - INTERVAL 11 DAY, NOW() - INTERVAL 12 DAY, 1),  -- on time
-(7, 2,  4, 1, NOW() - INTERVAL 15 DAY, CURDATE() - INTERVAL 8 DAY,  NOW() - INTERVAL 10 DAY, 2),  -- on time
-(8, 17, 5, 2, NOW() - INTERVAL 14 DAY, CURDATE() - INTERVAL 7 DAY,  NOW() - INTERVAL 2 DAY,  1),  -- 5 days late
-(9, 13, 6, 1, NOW() - INTERVAL 60 DAY, CURDATE() - INTERVAL 53 DAY, NOW() - INTERVAL 53 DAY, 1);  -- on time (Kevin, now deactivated)
+(1, 1,  1, 1, NOW() - INTERVAL 40 DAY, CURDATE() - INTERVAL 33 DAY, NOW() - INTERVAL 34 DAY, 1),
+(2, 6,  2, 1, NOW() - INTERVAL 35 DAY, CURDATE() - INTERVAL 28 DAY, NOW() - INTERVAL 25 DAY, 2),
+(3, 15, 3, 2, NOW() - INTERVAL 30 DAY, CURDATE() - INTERVAL 23 DAY, NOW() - INTERVAL 20 DAY, 1),
+(4, 9,  4, 1, NOW() - INTERVAL 25 DAY, CURDATE() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY, 1),
+(5, 1,  2, 2, NOW() - INTERVAL 20 DAY, CURDATE() - INTERVAL 13 DAY, NOW() - INTERVAL 14 DAY, 2),
+(6, 22, 1, 1, NOW() - INTERVAL 18 DAY, CURDATE() - INTERVAL 11 DAY, NOW() - INTERVAL 12 DAY, 1),
+(7, 2,  4, 1, NOW() - INTERVAL 15 DAY, CURDATE() - INTERVAL 8 DAY,  NOW() - INTERVAL 10 DAY, 2),
+(8, 17, 5, 2, NOW() - INTERVAL 14 DAY, CURDATE() - INTERVAL 7 DAY,  NOW() - INTERVAL 2 DAY,  1),
+(9, 13, 6, 1, NOW() - INTERVAL 60 DAY, CURDATE() - INTERVAL 53 DAY, NOW() - INTERVAL 53 DAY, 1);
 
--- Active loans (these pass through trg_loans_before_insert validation)
+-- Active loans
 INSERT INTO loans (loan_id, copy_id, member_id, issued_by, borrowed_at, due_date) VALUES
-(10, 3,  1, 1, NOW() - INTERVAL 3 DAY,  CURDATE() + INTERVAL 4 DAY),   -- Ana
-(11, 11, 1, 1, NOW() - INTERVAL 2 DAY,  CURDATE() + INTERVAL 5 DAY),   -- Ana
-(12, 10, 4, 2, NOW() - INTERVAL 1 DAY,  CURDATE() + INTERVAL 6 DAY),   -- Paolo
-(13, 18, 5, 1, NOW() - INTERVAL 5 DAY,  CURDATE() + INTERVAL 2 DAY),   -- Carla
-(14, 4,  2, 2, NOW() - INTERVAL 12 DAY, CURDATE() - INTERVAL 5 DAY);   -- Mark: OVERDUE by 5 days
+(10, 3,  1, 1, NOW() - INTERVAL 3 DAY,  CURDATE() + INTERVAL 4 DAY),
+(11, 11, 1, 1, NOW() - INTERVAL 2 DAY,  CURDATE() + INTERVAL 5 DAY),
+(12, 10, 4, 2, NOW() - INTERVAL 1 DAY,  CURDATE() + INTERVAL 6 DAY),
+(13, 18, 5, 1, NOW() - INTERVAL 5 DAY,  CURDATE() + INTERVAL 2 DAY),
+(14, 4,  2, 2, NOW() - INTERVAL 12 DAY, CURDATE() - INTERVAL 5 DAY);
 
--- Fines for late returns (amount is auto-computed)
+-- Fines
 INSERT INTO fines (fine_id, loan_id, days_overdue, rate_per_day, is_paid, paid_at, received_by) VALUES
-(1, 2, 3, 5.00, 1, NOW() - INTERVAL 25 DAY, 2),   -- Mark: paid
-(2, 3, 3, 5.00, 0, NULL, NULL),                   -- Liza: UNPAID (blocks borrowing)
-(3, 8, 5, 5.00, 1, NOW() - INTERVAL 2 DAY,  1);   -- Carla: paid
-
--- =====================================================================
---  END OF SCRIPT
--- =====================================================================
+(1, 2, 3, 5.00, 1, NOW() - INTERVAL 25 DAY, 2),
+(2, 3, 3, 5.00, 0, NULL, NULL),
+(3, 8, 5, 5.00, 1, NOW() - INTERVAL 2 DAY,  1);

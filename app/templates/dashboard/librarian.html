@@ -162,8 +162,24 @@
                     {% for loan in recent_loans %}
                     <tr>
                         <td class="ps-3">
-                            <div class="fw-bold text-dark">{{ loan.title }}</div>
-                            <small class="text-muted"><code>{{ loan.accession_no }}</code></small>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded border shadow-2xs overflow-hidden bg-light flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 44px;">
+                                    {% if loan.cover_image_url %}
+                                    <img src="{{ loan.cover_image_url }}" alt="{{ loan.title }}" class="w-100 h-100 object-fit-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="w-100 h-100 d-none align-items-center justify-content-center text-muted bg-slate-100">
+                                        <i class="bi bi-book text-indigo" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted bg-slate-100">
+                                        <i class="bi bi-book text-indigo" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ loan.title }}</div>
+                                    <small class="text-muted"><code>{{ loan.accession_no }}</code></small>
+                                </div>
+                            </div>
                         </td>
                         <td>
                             <div class="fw-semibold text-dark">{{ loan.member_name }}</div>

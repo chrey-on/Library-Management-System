@@ -60,6 +60,16 @@
                         </div>
 
                         <div class="col-12">
+                            <label for="cover_image_url" class="form-label fw-semibold">Cover Image URL</label>
+                            <input type="url" class="form-control" id="cover_image_url" name="cover_image_url" value="{{ book.cover_image_url if book and book.cover_image_url else '' }}" placeholder="https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg" oninput="updateCoverPreview(this.value)">
+                            <small class="text-muted">Optional. Leave blank to auto-fetch high-resolution cover from Open Library using the ISBN.</small>
+                            <div class="mt-2" id="cover_preview_wrapper" style="display: {{ 'block' if book and book.cover_image_url else 'none' }};">
+                                <small class="text-muted d-block mb-1">Image Preview:</small>
+                                <img id="cover_preview_img" src="{{ book.cover_image_url if book and book.cover_image_url else '' }}" alt="Cover Preview" class="rounded border shadow-sm" style="max-height: 120px; object-fit: cover;">
+                            </div>
+                        </div>
+
+                        <div class="col-12">
                             <label for="description" class="form-label fw-semibold">Description / Synopsis</label>
                             <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief summary of book content">{{ book.description if book and book.description else '' }}</textarea>
                         </div>
@@ -87,4 +97,19 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCoverPreview(url) {
+    const wrapper = document.getElementById('cover_preview_wrapper');
+    const img = document.getElementById('cover_preview_img');
+    if (url && url.trim() !== '') {
+        img.src = url.trim();
+        wrapper.style.display = 'block';
+    } else {
+        wrapper.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

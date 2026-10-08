@@ -71,15 +71,31 @@
                     {% for book in books %}
                     <tr class="{% if book.is_archived %}table-secondary text-muted{% endif %}">
                         <td class="ps-3">
-                            <div class="fw-bold text-dark fs-6">
-                                <a href="{{ url_for('books.detail', book_id=book.book_id) }}" class="text-decoration-none {% if book.is_archived %}text-muted{% else %}text-primary{% endif %}">
-                                    {{ book.title }}
-                                </a>
-                                {% if book.is_archived %}
-                                    <span class="badge bg-secondary ms-1">Archived</span>
-                                {% endif %}
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded border shadow-2xs overflow-hidden bg-light flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 42px; height: 56px;">
+                                    {% if book.cover_image_url %}
+                                    <img src="{{ book.cover_image_url }}" alt="{{ book.title }}" class="w-100 h-100 object-fit-cover" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="w-100 h-100 d-none align-items-center justify-content-center text-muted bg-slate-100">
+                                        <i class="bi bi-book fs-5 text-indigo"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted bg-slate-100">
+                                        <i class="bi bi-book fs-5 text-indigo"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark fs-6">
+                                        <a href="{{ url_for('books.detail', book_id=book.book_id) }}" class="text-decoration-none {% if book.is_archived %}text-muted{% else %}text-primary{% endif %}">
+                                            {{ book.title }}
+                                        </a>
+                                        {% if book.is_archived %}
+                                            <span class="badge bg-secondary ms-1">Archived</span>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-upc-scan me-1"></i>ISBN: {{ book.isbn }}</small>
+                                </div>
                             </div>
-                            <small class="text-muted"><i class="bi bi-upc-scan me-1"></i>ISBN: {{ book.isbn }}</small>
                         </td>
                         <td><span class="badge bg-light text-dark border">{{ book.category_name }}</span></td>
                         <td><small class="text-dark">{{ book.authors or 'No authors listed' }}</small></td>

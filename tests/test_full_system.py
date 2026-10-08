@@ -177,5 +177,90 @@ class LibrarySystemE2ETestCase(unittest.TestCase):
             res = self.client.get(endpoint)
             self.assertEqual(res.status_code, 200, f'Endpoint {endpoint} returned status {res.status_code}')
 
+    def test_07_book_covers_and_catalog_browse(self):
+        """Test book cover URL handling, catalog browse, and student portal views."""
+        # 1. Test member browse
+        self.client.post('/auth/login', data={'username': 'ana.reyes', 'password': 'member123'})
+        res = self.client.get('/books/browse')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'Explore Book Catalog', res.data)
+        self.assertIn(b'covers.openlibrary.org', res.data)
+
+        # 2. Test search filter on browse
+        res = self.client.get('/books/browse?q=Python')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'Python', res.data)
+
+        # 3. Create book with auto cover vs custom cover
+        self.client.get('/auth/logout')
+        self.client.post('/auth/login', data={'username': 'admin', 'password': 'admin123'})
+        ts = str(int(time.time()))
+        with self.app.app_context():
+            cat = query_one('SELECT category_id FROM categories LIMIT 1')
+            auth = query_one('SELECT author_id FROM authors LIMIT 1')
+
+        isbn_auto = f'9780{ts[-9:]}'
+        form_auto = MultiDict([
+            ('isbn', isbn_auto),
+            ('title', f'Auto Cover Test {ts}'),
+            ('category_id', str(cat['category_id'])),
+            ('author_ids', str(auth['author_id'])),
+            ('cover_image_url', ''), # Leave blank to auto-generate
+            ('initial_copies', '1')
+        ])
+        res = self.client.post('/books/create', data=form_auto, follow_redirects=True)
+        self.assertEqual(res.status_code, 200)
+
+        with self.app.app_context():
+            book = query_one('SELECT cover_image_url FROM books WHERE isbn = %s', (isbn_auto,))
+            self.assertIsNotNone(book)
+            self.assertIn('covers.openlibrary.org', book['cover_image_url'])
+
+    def test_08_full_route_matrix_and_error_pages(self):
+        """Test comprehensive route matrix for librarian and member roles."""
+        # Librarian routes check
+        self.client.post('/auth/login', data={'username': 'admin', 'password': 'admin123'})
+        librarian_routes = [
+            '/dashboard/librarian',
+            '/books/',
+            '/books/create',
+            '/categories/',
+            '/authors/',
+            '/members/',
+            '/members/create',
+            '/loans/',
+            '/loans/issue',
+            '/loans/return',
+            '/loans/fines',
+            '/reports/',
+            '/reports/most-borrowed',
+            '/reports/overdue',
+            '/reports/unpaid-fines',
+            '/reports/monthly-summary',
+            '/auth/change-password'
+        ]
+        for route in librarian_routes:
+            res = self.client.get(route)
+            self.assertEqual(res.status_code, 200, f'Librarian route {route} failed with status {res.status_code}')
+
+        # Member routes check
+        self.client.get('/auth/logout')
+        self.client.post('/auth/login', data={'username': 'ana.reyes', 'password': 'member123'})
+        member_routes = [
+            '/dashboard/member',
+            '/books/browse',
+            '/members/my-loans',
+            '/members/my-fines',
+            '/auth/change-password'
+        ]
+        for route in member_routes:
+            res = self.client.get(route)
+            self.assertEqual(res.status_code, 200, f'Member route {route} failed with status {res.status_code}')
+
+        # 404 test
+        res = self.client.get('/nonexistent-page-route')
+        self.assertEqual(res.status_code, 404)
+
+
 if __name__ == '__main__':
     unittest.main()
