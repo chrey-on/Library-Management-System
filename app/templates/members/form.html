@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Member' if member else 'Register New Member' }} - Library Management System{% endblock %}
+{% block page_heading %}{{ 'Update Member Profile' if member else 'Register New Student Member' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-primary">
+                    <i class="bi bi-person-lines-fill me-2"></i>{{ 'Edit Profile: ' ~ member.first_name ~ ' ' ~ member.last_name if member else 'Student Registration Form' }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('members.edit_member', member_id=member.member_id) if member else url_for('members.create_member') }}">
+                    <div class="row g-3">
+                        <!-- Student ID / Number -->
+                        <div class="col-md-6">
+                            <label for="student_no" class="form-label fw-semibold">Student Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="student_no" name="student_no" value="{{ member.student_no if member else '' }}" {% if member %}readonly disabled{% endif %} required placeholder="e.g. 2026-00109">
+                            {% if member %}<small class="text-muted">Student numbers cannot be changed once registered.</small>{% endif %}
+                        </div>
+
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <label for="username" class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ member.username if member else '' }}" {% if member %}readonly disabled{% endif %} required placeholder="e.g. juan.delacruz">
+                            {% if member %}<small class="text-muted">Username is fixed.</small>{% endif %}
+                        </div>
+
+                        <!-- First & Last Name -->
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ member.first_name if member else '' }}" required placeholder="e.g. Juan">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ member.last_name if member else '' }}" required placeholder="e.g. Dela Cruz">
+                        </div>
+
+                        <!-- Email & Contact -->
+                        <div class="col-md-6">
+                            <label for="email" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ member.email if member else '' }}" required placeholder="e.g. juan@student.local">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="contact_no" class="form-label fw-semibold">Contact Number</label>
+                            <input type="text" class="form-control" id="contact_no" name="contact_no" value="{{ member.contact_no if member and member.contact_no else '' }}" placeholder="e.g. 09171234567">
+                        </div>
+
+                        <!-- Academic Program & Year Level -->
+                        <div class="col-md-6">
+                            <label for="course_id" class="form-label fw-semibold">Program / Course <span class="text-danger">*</span></label>
+                            <select class="form-select" id="course_id" name="course_id" required>
+                                <option value="">Select Degree Program</option>
+                                {% for course in courses %}
+                                    <option value="{{ course.course_id }}" {% if member and member.course_id == course.course_id %}selected{% endif %}>
+                                        {{ course.course_code }} - {{ course.course_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="year_level" class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+                            <select class="form-select" id="year_level" name="year_level" required>
+                                <option value="1" {% if member and member.year_level == 1 %}selected{% endif %}>1st Year</option>
+                                <option value="2" {% if member and member.year_level == 2 %}selected{% endif %}>2nd Year</option>
+                                <option value="3" {% if member and member.year_level == 3 %}selected{% endif %}>3rd Year</option>
+                                <option value="4" {% if member and member.year_level == 4 %}selected{% endif %}>4th Year</option>
+                                <option value="5" {% if member and member.year_level == 5 %}selected{% endif %}>5th Year</option>
+                            </select>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="col-12">
+                            {% if member %}
+                                <label for="new_password" class="form-label fw-semibold">Reset Password (Optional)</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave blank to keep existing password">
+                            {% else %}
+                                <label for="password" class="form-label fw-semibold">Default Password <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password" name="password" required value="member123" placeholder="Enter initial password">
+                                <small class="text-muted">Default is set to <code>member123</code> (student can change later).</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{{ url_for('members.list_members') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> {{ 'Save Changes' if member else 'Register Student' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

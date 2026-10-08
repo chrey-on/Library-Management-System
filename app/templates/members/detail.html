@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}{{ member.first_name }} {{ member.last_name }} - Member Profile{% endblock %}
+{% block page_heading %}Student Member Profile{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <a href="{{ url_for('members.list_members') }}" class="btn btn-sm btn-outline-secondary mb-2">
+            <i class="bi bi-arrow-left me-1"></i> Back to Members
+        </a>
+        <h4 class="fw-bold mb-1">{{ member.first_name }} {{ member.last_name }}</h4>
+        <p class="text-muted small mb-0">
+            <i class="bi bi-card-text me-1"></i>Student No: <strong>{{ member.student_no }}</strong> | 
+            <i class="bi bi-mortarboard me-1"></i>{{ member.course_code }} (Year {{ member.year_level }})
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('members.edit_member', member_id=member.member_id) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i> Edit Profile
+        </a>
+        <form method="POST" action="{{ url_for('members.toggle_status', member_id=member.member_id) }}" class="d-inline">
+            <button type="submit" class="btn btn-{{ 'outline-success' if not member.is_active else 'outline-warning' }}"
+                    data-confirm="Are you sure you want to {{ 'activate' if not member.is_active else 'deactivate' }} this student account?">
+                <i class="bi bi-{{ 'person-check' if not member.is_active else 'person-x' }} me-1"></i>
+                {{ 'Activate' if not member.is_active else 'Deactivate' }}
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 card-stat">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="p-3 bg-primary-subtle text-primary rounded-3 me-3">
+                    <i class="bi bi-person-badge fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-muted small d-block">Account Status</span>
+                    <span class="h5 fw-bold mb-0 {% if member.is_active %}text-success{% else %}text-danger{% endif %}">
+                        {{ 'Active' if member.is_active else 'Deactivated' }}
+                    </span>
+                    <small class="text-muted d-block mt-1">@{{ member.username }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 card-stat">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="p-3 bg-info-subtle text-info rounded-3 me-3">
+                    <i class="bi bi-book fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-muted small d-block">Active Loans</span>
+                    <span class="h5 fw-bold mb-0 text-dark">{{ active_loans_count }} / 3 Active Books</span>
+                    <small class="text-muted d-block mt-1">{{ loans|length }} lifetime borrows</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 card-stat">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="p-3 bg-danger-subtle text-danger rounded-3 me-3">
+                    <i class="bi bi-cash-coin fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-muted small d-block">Unpaid Fines Balance</span>
+                    <span class="h5 fw-bold mb-0 {% if unpaid_total > 0 %}text-danger{% else %}text-success{% endif %}">
+                        ₱{{ "%.2f"|format(unpaid_total) }}
+                    </span>
+                    <small class="text-muted d-block mt-1">
+                        {% if unpaid_total > 0 %}Borrowing privilege suspended{% else %}In good standing{% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs for Loan History & Fines -->
+<div class="card shadow-sm border-0 table-card">
+    <div class="card-header bg-white border-bottom p-3">
+        <ul class="nav nav-pills" id="memberTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-semibold" id="loans-tab" data-bs-toggle="tab" data-bs-target="#loansTabPane" type="button" role="tab">
+                    <i class="bi bi-clock-history me-1"></i> Borrowing History ({{ loans|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="fines-tab" data-bs-toggle="tab" data-bs-target="#finesTabPane" type="button" role="tab">
+                    <i class="bi bi-receipt me-1"></i> Fines & Payments ({{ fines|length }})
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-0">
+        <div class="tab-content" id="memberTabContent">
+            <!-- Loans Tab -->
+            <div class="tab-pane fade show active" id="loansTabPane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Book Title</th>
+                                <th>Accession No.</th>
+                                <th>Date Borrowed</th>
+                                <th>Due Date</th>
+                                <th>Date Returned</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans %}
+                            <tr>
+                                <td class="ps-3 fw-bold text-dark">{{ loan.title }}</td>
+                                <td><code>{{ loan.accession_no }}</code></td>
+                                <td><small class="text-muted">{{ loan.borrowed_at.strftime('%b %d, %Y') if loan.borrowed_at else '—' }}</small></td>
+                                <td>
+                                    <small class="fw-semibold {% if loan.loan_status == 'overdue' %}text-danger{% endif %}">
+                                        {{ loan.due_date.strftime('%b %d, %Y') if loan.due_date else '—' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ loan.returned_at.strftime('%b %d, %Y') if loan.returned_at else '—' }}</small>
+                                </td>
+                                <td class="text-center">
+                                    {% if loan.loan_status == 'returned' %}
+                                        <span class="badge bg-success">Returned</span>
+                                    {% elif loan.loan_status == 'overdue' %}
+                                        <span class="badge bg-danger">Overdue ({{ loan.current_days_overdue }} days)</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-dark">Borrowed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No borrowing records found for this student.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Fines Tab -->
+            <div class="tab-pane fade" id="finesTabPane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Book Title</th>
+                                <th>Accession No.</th>
+                                <th>Days Overdue</th>
+                                <th>Fine Amount</th>
+                                <th class="text-center">Status</th>
+                                <th>Date Settled</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fine in fines %}
+                            <tr>
+                                <td class="ps-3 fw-bold text-dark">{{ fine.title }}</td>
+                                <td><code>{{ fine.accession_no }}</code></td>
+                                <td>{{ fine.days_overdue }} day(s)</td>
+                                <td class="fw-bold">₱{{ "%.2f"|format(fine.amount) }}</td>
+                                <td class="text-center">
+                                    {% if fine.is_paid %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Unpaid</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ fine.paid_at.strftime('%b %d, %Y %I:%M %p') if fine.paid_at else '—' }}</small></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No fine records for this student.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,7 +19,37 @@
     <div class="app-wrapper">
         {% include 'partials/sidebar.html' %}
         <div class="main-content">
-            {% include 'partials/navbar.html' %}
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary d-lg-none me-2" id="sidebarToggle" type="button">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+                    <span class="text-muted fw-semibold d-none d-sm-inline">
+                        {% block page_heading %}Dashboard{% endblock %}
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    {% if current_user %}
+                    <div class="dropdown">
+                        <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle fs-5 text-primary"></i>
+                            <div class="text-start d-none d-md-block">
+                                <div class="fw-bold lh-1" style="font-size: 0.875rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                                <small class="text-muted text-capitalize" style="font-size: 0.75rem;">{{ current_user.role }}</small>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <li><h6 class="dropdown-header">Signed in as @{{ current_user.username }}</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="bi bi-key me-2"></i>Change Password</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
 
             <main class="page-body">
                 <!-- Flash Messages -->
