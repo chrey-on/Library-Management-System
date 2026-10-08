@@ -8,7 +8,6 @@ def get_local_ip():
     """Finds the LAN IP address of this machine."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # Doesn't even have to be reachable
         s.connect(('10.255.255.255', 1))
         ip = s.getsockname()[0]
     except Exception:
@@ -24,10 +23,10 @@ if __name__ == '__main__':
     
     local_ip = get_local_ip()
     print("=" * 60)
-    print(f"🚀 Library Management System is running!")
-    print(f"   • On this PC:       http://localhost:{port}")
-    print(f"   • On other devices: http://{local_ip}:{port}")
-    print(f"   (Ensure other devices are connected to the same Wi-Fi)")
+    print(">> Library Management System is running!")
+    print(f"   * Local Access:     http://localhost:{port}")
+    print(f"   * Network Access:   http://{local_ip}:{port}")
+    print("   (Ensure other devices are connected to the same Wi-Fi)")
     print("=" * 60)
     
     app.run(host=host, port=port, debug=debug_mode)
