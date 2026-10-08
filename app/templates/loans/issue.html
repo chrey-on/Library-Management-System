@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Issue Book Loan - Library Management System{% endblock %}
+{% block page_heading %}Check Out / Issue Book Loan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-primary">
+                    <i class="bi bi-arrow-up-right-circle me-2"></i>Issue Book to Student Member
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('loans.issue_loan') }}">
+                    <div class="mb-4">
+                        <label for="member_id" class="form-label fw-semibold">Select Student Borrower <span class="text-danger">*</span></label>
+                        <select class="form-select" id="member_id" name="member_id" required>
+                            <option value="">-- Choose Student Member --</option>
+                            {% for m in members %}
+                                <option value="{{ m.member_id }}" 
+                                        {% if preselected_member_id|string == m.member_id|string %}selected{% endif %}>
+                                    {{ m.last_name }}, {{ m.first_name }} ({{ m.student_no }}) - {{ m.course_code }} [{{ m.active_loans }}/3 borrowed{% if m.unpaid_fines_count > 0 %}, HAS UNPAID FINES{% endif %}]
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Only active student accounts are listed. System automatically checks borrow limits and unpaid fines.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="copy_id" class="form-label fw-semibold">Select Physical Book Copy <span class="text-danger">*</span></label>
+                        <select class="form-select" id="copy_id" name="copy_id" required>
+                            <option value="">-- Choose Available Physical Copy --</option>
+                            {% for copy in available_copies %}
+                                <option value="{{ copy.copy_id }}"
+                                        {% if preselected_copy_id|string == copy.copy_id|string %}selected{% endif %}>
+                                    [{{ copy.accession_no }}] {{ copy.title }} ({{ copy.category_name }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Only physical copies currently in <code>available</code> status on the shelf are listed.</small>
+                    </div>
+
+                    <div class="alert alert-light border p-3 rounded-3 mb-4">
+                        <h6 class="fw-bold text-dark mb-1"><i class="bi bi-info-circle text-primary me-2"></i>Circulation Rules Enforced</h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li>Loan period: <strong>7 days</strong> from today.</li>
+                            <li>Maximum limit: <strong>3 active books</strong> per student.</li>
+                            <li>Overdue penalty: <strong>₱5.00 per day</strong> upon late return.</li>
+                            <li>Borrowing is blocked if student has unsettled fines or overdue loans.</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('loans.list_loans') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Confirm & Check Out Book
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

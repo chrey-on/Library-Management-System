@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Return Book - Library Management System{% endblock %}
+{% block page_heading %}Check In / Return Book{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Quick Accession Barcode Return Form -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-success">
+                    <i class="bi bi-upc-scan me-2"></i>Quick Return by Accession No.
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('loans.return_loan') }}">
+                    <div class="mb-3">
+                        <label for="accession_no" class="form-label fw-semibold">Scan / Enter Accession Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-upc"></i></span>
+                            <input type="text" class="form-control" id="accession_no" name="accession_no" autofocus placeholder="e.g. ACC-0004">
+                        </div>
+                        <small class="text-muted">Type or scan the barcode accession number on the book cover.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-semibold shadow-sm">
+                        <i class="bi bi-arrow-down-left-circle me-1"></i> Process Book Return
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-info border-0 shadow-sm p-3 rounded-4">
+            <h6 class="fw-bold mb-1"><i class="bi bi-calculator me-1"></i>Automatic Overdue Fine Engine</h6>
+            <p class="small mb-0">If a book is returned after its due date, the system will automatically calculate the overdue days and assess a fine of ₱5.00/day into the fines ledger.</p>
+        </div>
+    </div>
+
+    <!-- Active Loans Quick Click List -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 table-card">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-clock-history me-2"></i>Currently Out On Loan</h5>
+                <span class="badge bg-primary">{{ active_loans|length }} Active</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="ps-3">Book & Copy</th>
+                                <th>Borrower</th>
+                                <th>Due Date</th>
+                                <th class="text-end pe-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in active_loans %}
+                            <tr class="{% if loan.loan_status == 'overdue' %}table-danger-subtle{% endif %}">
+                                <td class="ps-3">
+                                    <div class="fw-bold text-dark">{{ loan.title }}</div>
+                                    <small class="text-muted">Copy: <code>{{ loan.accession_no }}</code></small>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ loan.member_name }}</div>
+                                    <small class="text-muted">{{ loan.student_no }}</small>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold {% if loan.loan_status == 'overdue' %}text-danger{% endif %}">
+                                        {{ loan.due_date.strftime('%b %d, %Y') if loan.due_date else '—' }}
+                                    </span>
+                                    {% if loan.loan_status == 'overdue' %}
+                                        <span class="badge bg-danger ms-1">{{ loan.current_days_overdue }}d late</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    <form method="POST" action="{{ url_for('loans.return_loan') }}">
+                                        <input type="hidden" name="loan_id" value="{{ loan.loan_id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success" data-confirm="Confirm return of '{{ loan.title }}'?">
+                                            <i class="bi bi-arrow-down-left-circle me-1"></i> Return
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No books currently out on loan.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
