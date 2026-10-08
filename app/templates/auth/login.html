@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Sign In - Library Management System{% endblock %}
+
+{% block auth_content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <i class="bi bi-book-half display-4"></i>
+                <h3 class="fw-bold mt-2 mb-0">Library Portal</h3>
+                <p class="text-white-50 small mb-0">Sign in to your account</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-semibold">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ username or '' }}" required autofocus placeholder="Enter your username">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required placeholder="Enter your password">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label text-muted small" for="remember">Keep me logged in for 4 hours</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold rounded-3 shadow-sm">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                    </button>
+                </form>
+
+                <!-- Demo Credentials Helper Card -->
+                <div class="mt-4 pt-3 border-top">
+                    <h6 class="text-muted small fw-bold text-uppercase mb-2">Demo Accounts (For Testing)</h6>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="p-2 bg-light rounded border text-center small">
+                                <span class="badge bg-primary mb-1">Librarian</span>
+                                <div class="text-truncate"><code>admin</code></div>
+                                <div class="text-muted"><code>admin123</code></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 bg-light rounded border text-center small">
+                                <span class="badge bg-secondary mb-1">Member</span>
+                                <div class="text-truncate"><code>ana.reyes</code></div>
+                                <div class="text-muted"><code>member123</code></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="card-footer bg-light text-center py-3 border-0">
+                <small class="text-muted">Database 2 Case Study &copy; 2026</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

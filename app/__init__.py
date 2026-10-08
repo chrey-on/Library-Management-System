@@ -7,6 +7,25 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Register blueprints
+    from app.routes.auth import auth_bp
+    from app.routes.dashboard import dashboard_bp
+    from app.routes.books import books_bp
+    from app.routes.categories import categories_bp
+    from app.routes.authors import authors_bp
+    from app.routes.members import members_bp
+    from app.routes.loans import loans_bp
+    from app.routes.reports import reports_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(books_bp)
+    app.register_blueprint(categories_bp)
+    app.register_blueprint(authors_bp)
+    app.register_blueprint(members_bp)
+    app.register_blueprint(loans_bp)
+    app.register_blueprint(reports_bp)
+
     # Teardown DB connection at end of each request
     app.teardown_appcontext(close_db)
 

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Member Dashboard{% endblock %}
+{% block page_heading %}Student Portal{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-primary shadow-sm">
+            <h5 class="alert-heading"><i class="bi bi-person-check me-2"></i>Welcome, {{ current_user.first_name }}!</h5>
+            <p class="mb-0">Member student portal initialized successfully. Your active borrowings, due dates, and fine records will appear here.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
