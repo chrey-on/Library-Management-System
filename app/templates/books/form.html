@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Book' if book else 'Add New Book' }} - Library Management System{% endblock %}
+{% block page_heading %}{{ 'Edit Book Details' if book else 'Add New Book Title' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-primary">
+                    <i class="bi bi-journal-plus me-2"></i>{{ 'Edit Book: ' ~ book.title if book else 'Register New Book Title' }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('books.edit_book', book_id=book.book_id) if book else url_for('books.create_book') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="isbn" class="form-label fw-semibold">ISBN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="isbn" name="isbn" value="{{ book.isbn if book else '' }}" required placeholder="e.g. 9780132350884">
+                            <small class="text-muted">Standard 10 or 13-digit ISBN</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="category_id" class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="">Select Category</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.category_id }}" {% if book and book.category_id == cat.category_id %}selected{% endif %}>
+                                        {{ cat.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="title" class="form-label fw-semibold">Book Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ book.title if book else '' }}" required placeholder="e.g. Clean Code: A Handbook of Agile Software Craftsmanship">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="author_ids" class="form-label fw-semibold">Author(s) <span class="text-danger">*</span></label>
+                            <select class="form-select" id="author_ids" name="author_ids" multiple size="4" required>
+                                {% for author in authors %}
+                                    <option value="{{ author.author_id }}" {% if current_author_ids and author.author_id in current_author_ids %}selected{% endif %}>
+                                        {{ author.last_name }}, {{ author.first_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Hold <kbd>Ctrl</kbd> (or <kbd>Cmd</kbd>) to select multiple authors.</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="publisher" class="form-label fw-semibold">Publisher</label>
+                            <input type="text" class="form-control" id="publisher" name="publisher" value="{{ book.publisher if book and book.publisher else '' }}" placeholder="e.g. Prentice Hall">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="publication_year" class="form-label fw-semibold">Publication Year</label>
+                            <input type="number" class="form-control" id="publication_year" name="publication_year" value="{{ book.publication_year if book and book.publication_year else '' }}" min="1450" max="2100" placeholder="e.g. 2024">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="description" class="form-label fw-semibold">Description / Synopsis</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief summary of book content">{{ book.description if book and book.description else '' }}</textarea>
+                        </div>
+
+                        {% if not book %}
+                        <!-- Initial copies count when creating new title -->
+                        <div class="col-md-6">
+                            <label for="initial_copies" class="form-label fw-semibold">Initial Physical Copies to Generate</label>
+                            <input type="number" class="form-control" id="initial_copies" name="initial_copies" value="2" min="1" max="50">
+                            <small class="text-muted">Auto-generates sequential accession numbers.</small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{{ url_for('books.list_books') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> {{ 'Update Book' if book else 'Save & Create Book' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

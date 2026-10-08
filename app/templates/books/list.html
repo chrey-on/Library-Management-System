@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Manage Books - Library Management System{% endblock %}
+{% block page_heading %}Book Catalog & Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Book Inventory</h4>
+        <p class="text-muted small mb-0">Manage library titles, physical copies, and classifications</p>
+    </div>
+    <div>
+        <a href="{{ url_for('books.create_book') }}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add New Book
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filters Toolbar -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ url_for('books.list_books') }}" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="q" value="{{ q or '' }}" placeholder="Search by title, ISBN, or author...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="category_id">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.category_id }}" {% if category_id|string == cat.category_id|string %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status">
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archived Only</option>
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Records</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-secondary w-100"><i class="bi bi-filter"></i> Filter</button>
+                {% if q or category_id or status_filter != 'active' %}
+                    <a href="{{ url_for('books.list_books') }}" class="btn btn-outline-secondary" title="Reset Filters"><i class="bi bi-x-lg"></i></a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Books Table Card -->
+<div class="card shadow-sm border-0 table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Book Details</th>
+                        <th>Category</th>
+                        <th>Author(s)</th>
+                        <th>Publisher / Year</th>
+                        <th class="text-center">Availability</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books %}
+                    <tr class="{% if book.is_archived %}table-secondary text-muted{% endif %}">
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark fs-6">
+                                <a href="{{ url_for('books.detail', book_id=book.book_id) }}" class="text-decoration-none {% if book.is_archived %}text-muted{% else %}text-primary{% endif %}">
+                                    {{ book.title }}
+                                </a>
+                                {% if book.is_archived %}
+                                    <span class="badge bg-secondary ms-1">Archived</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted"><i class="bi bi-upc-scan me-1"></i>ISBN: {{ book.isbn }}</small>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ book.category_name }}</span></td>
+                        <td><small class="text-dark">{{ book.authors or 'No authors listed' }}</small></td>
+                        <td><small class="text-muted">{{ book.publisher or '—' }} ({{ book.publication_year or '—' }})</small></td>
+                        <td class="text-center">
+                            {% if book.available_copies > 0 %}
+                                <span class="badge badge-status-available border px-2 py-1">
+                                    <i class="bi bi-check2-circle me-1"></i>{{ book.available_copies }} / {{ book.total_copies }} Available
+                                </span>
+                            {% elif book.total_copies > 0 %}
+                                <span class="badge bg-warning text-dark border px-2 py-1">
+                                    <i class="bi bi-hourglass-split me-1"></i>All {{ book.total_copies }} Borrowed
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger text-white border px-2 py-1">
+                                    <i class="bi bi-slash-circle me-1"></i>0 Copies
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{{ url_for('books.detail', book_id=book.book_id) }}" class="btn btn-sm btn-outline-info me-1" title="View Details & Physical Copies">
+                                <i class="bi bi-eye"></i> Copies
+                            </a>
+                            <a href="{{ url_for('books.edit_book', book_id=book.book_id) }}" class="btn btn-sm btn-outline-primary me-1" title="Edit Book">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('books.toggle_archive', book_id=book.book_id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-{{ 'success' if book.is_archived else 'danger' }}" 
+                                        data-confirm="Are you sure you want to {{ 'restore' if book.is_archived else 'archive' }} '{{ book.title }}'?" 
+                                        title="{{ 'Restore' if book.is_archived else 'Archive (Soft Delete)' }}">
+                                    <i class="bi bi-{{ 'arrow-counterclockwise' if book.is_archived else 'archive' }}"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-journal-x display-6 d-block mb-2"></i>
+                            No books matched your criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

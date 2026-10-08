@@ -33,7 +33,10 @@ def query_all(sql, params=None):
     """
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute(sql, params or ())
+        if params is not None and len(params) > 0:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
         return cursor.fetchall()
 
 def query_one(sql, params=None):
@@ -43,7 +46,10 @@ def query_one(sql, params=None):
     """
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute(sql, params or ())
+        if params is not None and len(params) > 0:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
         return cursor.fetchone()
 
 def execute_db(sql, params=None, autocommit=True):
@@ -53,7 +59,10 @@ def execute_db(sql, params=None, autocommit=True):
     """
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute(sql, params or ())
+        if params is not None and len(params) > 0:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
         last_id = cursor.lastrowid
         affected = cursor.rowcount
     if autocommit:
