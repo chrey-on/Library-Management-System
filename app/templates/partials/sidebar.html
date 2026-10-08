@@ -1,0 +1,83 @@
+<aside class="sidebar" id="sidebar">
+    <a href="{{ url_for('index') }}" class="sidebar-brand">
+        <i class="bi bi-book-half"></i>
+        <span>Library MS</span>
+    </a>
+
+    <div class="sidebar-nav">
+        {% if session.get('role') == 'librarian' %}
+            <!-- LIBRARIAN MENU -->
+            <div class="sidebar-heading">Main</div>
+            <a href="{{ url_for('dashboard.librarian_dashboard') }}" class="nav-link-custom {% if request.endpoint == 'dashboard.librarian_dashboard' %}active{% endif %}">
+                <i class="bi bi-grid-fill"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <div class="sidebar-heading">Circulation</div>
+            <a href="{{ url_for('loans.issue_loan') }}" class="nav-link-custom {% if request.endpoint == 'loans.issue_loan' %}active{% endif %}">
+                <i class="bi bi-arrow-up-right-circle"></i>
+                <span>Borrow Book</span>
+            </a>
+            <a href="{{ url_for('loans.list_loans') }}" class="nav-link-custom {% if request.endpoint in ['loans.list_loans', 'loans.return_loan'] %}active{% endif %}">
+                <i class="bi bi-arrow-down-left-circle"></i>
+                <span>Return & Loans</span>
+            </a>
+            <a href="{{ url_for('loans.list_fines') }}" class="nav-link-custom {% if request.endpoint == 'loans.list_fines' %}active{% endif %}">
+                <i class="bi bi-cash-coin"></i>
+                <span>Fines & Payments</span>
+            </a>
+
+            <div class="sidebar-heading">Catalog Management</div>
+            <a href="{{ url_for('books.list_books') }}" class="nav-link-custom {% if request.endpoint and request.endpoint.startswith('books.') %}active{% endif %}">
+                <i class="bi bi-journal-bookmark-fill"></i>
+                <span>Books & Copies</span>
+            </a>
+            <a href="{{ url_for('categories.list_categories') }}" class="nav-link-custom {% if request.endpoint and request.endpoint.startswith('categories.') %}active{% endif %}">
+                <i class="bi bi-tags-fill"></i>
+                <span>Categories</span>
+            </a>
+            <a href="{{ url_for('authors.list_authors') }}" class="nav-link-custom {% if request.endpoint and request.endpoint.startswith('authors.') %}active{% endif %}">
+                <i class="bi bi-people-fill"></i>
+                <span>Authors</span>
+            </a>
+
+            <div class="sidebar-heading">Users & Reports</div>
+            <a href="{{ url_for('members.list_members') }}" class="nav-link-custom {% if request.endpoint and request.endpoint.startswith('members.') %}active{% endif %}">
+                <i class="bi bi-person-badge-fill"></i>
+                <span>Members</span>
+            </a>
+            <a href="{{ url_for('reports.reports_home') }}" class="nav-link-custom {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}">
+                <i class="bi bi-bar-chart-line-fill"></i>
+                <span>Reports</span>
+            </a>
+
+        {% elif session.get('role') == 'member' %}
+            <!-- MEMBER MENU -->
+            <div class="sidebar-heading">My Portal</div>
+            <a href="{{ url_for('dashboard.member_dashboard') }}" class="nav-link-custom {% if request.endpoint == 'dashboard.member_dashboard' %}active{% endif %}">
+                <i class="bi bi-grid-fill"></i>
+                <span>My Dashboard</span>
+            </a>
+            <a href="{{ url_for('books.browse') }}" class="nav-link-custom {% if request.endpoint == 'books.browse' %}active{% endif %}">
+                <i class="bi bi-search"></i>
+                <span>Browse Catalog</span>
+            </a>
+            <a href="{{ url_for('members.my_loans') }}" class="nav-link-custom {% if request.endpoint == 'members.my_loans' %}active{% endif %}">
+                <i class="bi bi-clock-history"></i>
+                <span>Borrow History</span>
+            </a>
+            <a href="{{ url_for('members.my_fines') }}" class="nav-link-custom {% if request.endpoint == 'members.my_fines' %}active{% endif %}">
+                <i class="bi bi-receipt"></i>
+                <span>My Fines</span>
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-link-custom text-danger">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Sign Out</span>
+        </a>
+    </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
